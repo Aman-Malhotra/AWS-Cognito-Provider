@@ -5,9 +5,9 @@ import 'package:flutter_cognito_plugin/flutter_cognito_plugin.dart';
 
 class CognitoPm extends ChangeNotifier {
   BuildContext context;
-
+  var returnValue;
   UserState userState;
-
+  double progress;
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
   final attrsController = TextEditingController();
@@ -18,86 +18,150 @@ class CognitoPm extends ChangeNotifier {
     doLoad();
     Cognito.registerCallback((value) {
       userState = value;
+      _notify();
     });
   }
 
   Future<void> doLoad() async {
     var value;
-    value = await Cognito.initialize();
+    try {
+      value = await Cognito.initialize();
+    } catch (e, trace) {
+      print(e);
+      print(trace);
+      returnValue = e;
+      progress = -1;
+      return;
+    }
+    progress = -1;
     userState = value;
+    _notify();
+  }
+
+  onPressWrapper(fn) {
+    wrapper() async {
+      progress = null;
+      String value;
+      try {
+        value = (await fn()).toString();
+      } catch (e, _) {
+        value = e.toString();
+      } finally {
+        progress = -1;
+      }
+      returnValue = value;
+      _notify();
+    }
+    return wrapper;
   }
 
   onsignUp() {
-    final attrs = attrsController.text;
-    Cognito.signUp(
-      usernameController.text,
-      passwordController.text,
-      attrs.isEmpty ? null : Map<String, String>.from(jsonDecode(attrs)),
-    );
+    return onPressWrapper(() {
+      final attrs = attrsController.text;
+      return Cognito.signUp(
+        usernameController.text,
+        passwordController.text,
+        attrs.isEmpty ? null : Map<String, String>.from(jsonDecode(attrs)),
+      );
+    });
   }
 
   confirmSignUp() {
-    Cognito.confirmSignUp(
-      usernameController.text,
-      confirmationCodeController.text,
-    );
+    return onPressWrapper(() {
+      return Cognito.confirmSignUp(
+        usernameController.text,
+        confirmationCodeController.text,
+      );
+    });
   }
 
   resendSignUp() {
-    Cognito.resendSignUp(usernameController.text);
+    return onPressWrapper(() {
+      return Cognito.resendSignUp(usernameController.text);
+    });
   }
 
   signIn() {
-    Cognito.signIn(
-      usernameController.text,
-      passwordController.text,
-    );
+    return onPressWrapper(() {
+      return Cognito.signIn(
+        usernameController.text,
+        passwordController.text,
+      );
+    });
   }
 
   confirmSignIn() {
-    Cognito.confirmSignIn(confirmationCodeController.text);
+    return onPressWrapper(() {
+      return Cognito.confirmSignIn(confirmationCodeController.text);
+    });
   }
 
   signOut() {
-    Cognito.signOut();
+    return onPressWrapper(() {
+      return Cognito.signOut();
+    });
   }
 
   showSignIn() {
-    Cognito.showSignIn(
-      identityProvider: "google",
-      scopes: ["email", "openid"],
-    );
+    return onPressWrapper(() {
+      return Cognito.showSignIn(
+        identityProvider: "google",
+        scopes: ["email", "openid"],
+      );
+    });
   }
 
   forgotPassowrd() {
-    Cognito.forgotPassword(usernameController.text);
+    return onPressWrapper(() {
+      return Cognito.forgotPassword(usernameController.text);
+    });
   }
 
   confirmForgotPassword() {
-    Cognito.confirmForgotPassword(
-      usernameController.text,
-      newPasswordController.text,
-      confirmationCodeController.text,
-    );
+    return onPressWrapper(() {
+      return Cognito.confirmForgotPassword(
+        usernameController.text,
+        newPasswordController.text,
+        confirmationCodeController.text,
+      );
+    });
   }
 
   getCreds() {
-    Cognito.getCredentials();
+    return onPressWrapper(() {
+      return Cognito.getCredentials();
+    });
   }
 
   getTokens() {
-    Cognito.getTokens();
+    return onPressWrapper(() {
+      return Cognito.getTokens();
+    });
   }
 
   getIdentityId() {
-    Cognito.getIdentityId();
+    return onPressWrapper(() {
+      return Cognito.getIdentityId();
+    });
   }
 
   isSignedIn() {
-    Cognito.isSignedIn();
+    return onPressWrapper(() {
+      return Cognito.isSignedIn();
+    });
   }
 
   getUsername() {
-    Cognito.getUsername();
+    return onPressWrapper(() {
+      return Cognito.getUsername();
+    });
+  }
+
+  _notify() {
+    try {
+      this.notifyListeners();
+    } catch (e) {
+      print("Error while notify in Cognito");
+    }
   }
 }
